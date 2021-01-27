@@ -12,9 +12,19 @@
  * limitations under the License.
  */
 
-package com.github.housepower.client;
+package com.github.housepower.io;
 
-public enum SessionState {
+public interface BinaryWriter extends AutoCloseable {
 
-    IDLE, WAITING_INSERT
+    void writeByte(byte byt);
+
+    void writeBytes(byte[] bytes);
+
+    void writeBytes(byte[] bytes, int offset, int length);
+
+    void flush(boolean force);
+
+    @Override
+    default void close() {
+    }
 }

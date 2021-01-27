@@ -27,7 +27,7 @@ public class ClickHouseDefines {
 
     public static final int MAX_BLOCK_BYTES = 1024 * 1024 * 10;
     public static int SOCKET_SEND_BUFFER_BYTES = 1024 * 1024;
-    public static int SOCKET_RECV_BUFFER_BYTES = 1024 * 1024;
+    public static int SOCKET_RECV_BUFFER_BYTES = 1024 * 1024 * 4;
 
     public static int COLUMN_BUFFER_BYTES = 1024 * 1024;
 

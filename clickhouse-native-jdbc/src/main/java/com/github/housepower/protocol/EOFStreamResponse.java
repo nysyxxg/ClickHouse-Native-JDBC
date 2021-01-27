@@ -14,13 +14,13 @@
 
 package com.github.housepower.protocol;
 
-import com.github.housepower.serde.BinaryDeserializer;
+import io.netty.buffer.ByteBuf;
 
 public class EOFStreamResponse implements Response {
 
     public static final EOFStreamResponse INSTANCE = new EOFStreamResponse();
 
-    public static Response readFrom(BinaryDeserializer deserializer) {
+    public static Response readFrom(ByteBuf buf) {
         return INSTANCE;
     }
 

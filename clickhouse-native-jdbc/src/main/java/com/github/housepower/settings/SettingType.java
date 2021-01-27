@@ -12,19 +12,23 @@
  * limitations under the License.
  */
 
-package com.github.housepower.serde;
+package com.github.housepower.settings;
 
-import java.io.IOException;
+import com.github.housepower.misc.ByteBufHelper;
+import io.netty.buffer.ByteBuf;
+
 import java.io.Serializable;
 import java.time.Duration;
 
-public interface SettingType<T extends Serializable> {
+public interface SettingType<T extends Serializable> extends ByteBufHelper {
 
     Class<T> javaClass();
 
     T deserializeURL(String queryParameter);
 
-    void serializeSetting(BinarySerializer serializer, T value) throws IOException;
+    void serializeSetting(BinarySerializer serializer, T value);
+
+    void encode(ByteBuf buf, T value);
 
     SettingType<Long> Int64 = new SettingType<Long>() {
 
@@ -39,8 +43,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Long value) throws IOException {
+        public void serializeSetting(BinarySerializer serializer, Long value) {
             serializer.writeVarInt(value);
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Long value) {
+            writeVarInt(buf, value);
         }
     };
 
@@ -57,8 +66,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Integer value) throws IOException {
+        public void serializeSetting(BinarySerializer serializer, Integer value) {
             serializer.writeVarInt(value);
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Integer value) {
+            writeVarInt(buf, value);
         }
     };
 
@@ -75,8 +89,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Float value) throws IOException {
-            serializer.writeUTF8StringBinary(String.valueOf(value));
+        public void serializeSetting(BinarySerializer serializer, Float value) {
+            serializer.writeUTF8Binary(String.valueOf(value));
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Float value) {
+            writeUTF8Binary(buf, String.valueOf(value));
         }
     };
 
@@ -93,8 +112,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, String value) throws IOException {
-            serializer.writeUTF8StringBinary(String.valueOf(value));
+        public void serializeSetting(BinarySerializer serializer, String value) {
+            serializer.writeUTF8Binary(String.valueOf(value));
+        }
+
+        @Override
+        public void encode(ByteBuf buf, String value) {
+            writeUTF8Binary(buf, value);
         }
     };
 
@@ -111,8 +135,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Boolean value) throws IOException {
+        public void serializeSetting(BinarySerializer serializer, Boolean value) {
             serializer.writeVarInt(Boolean.TRUE.equals(value) ? 1 : 0);
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Boolean value) {
+            writeVarInt(buf, Boolean.TRUE.equals(value) ? 1 : 0);
         }
     };
 
@@ -129,8 +158,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Duration value) throws IOException {
+        public void serializeSetting(BinarySerializer serializer, Duration value) {
             serializer.writeVarInt(value.getSeconds());
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Duration value) {
+            writeVarInt(buf, value.getSeconds());
         }
     };
 
@@ -147,8 +181,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Duration value) throws IOException {
+        public void serializeSetting(BinarySerializer serializer, Duration value) {
             serializer.writeVarInt(value.toMillis());
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Duration value) {
+            writeVarInt(buf, value.toMillis());
         }
     };
 
@@ -165,8 +204,13 @@ public interface SettingType<T extends Serializable> {
         }
 
         @Override
-        public void serializeSetting(BinarySerializer serializer, Character value) throws IOException {
-            serializer.writeUTF8StringBinary(String.valueOf(value));
+        public void serializeSetting(BinarySerializer serializer, Character value) {
+            serializer.writeUTF8Binary(String.valueOf(value));
+        }
+
+        @Override
+        public void encode(ByteBuf buf, Character value) {
+            writeUTF8Binary(buf, String.valueOf(value));
         }
     };
 }

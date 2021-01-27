@@ -15,13 +15,10 @@
 package com.github.housepower.protocol;
 
 import com.github.housepower.client.NativeContext;
-import com.github.housepower.serde.BinarySerializer;
-import com.github.housepower.serde.SettingType;
+import com.github.housepower.settings.SettingType;
 import com.github.housepower.settings.SettingKey;
+import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -45,10 +42,6 @@ public class QueryRequest implements Request {
     private final NativeContext.ClientContext clientContext;
     private final Map<SettingKey, Serializable> settings;
 
-    public QueryRequest(String queryId, NativeContext.ClientContext clientContext, int stage, boolean compression, String queryString) {
-        this(queryId, clientContext, stage, compression, queryString, new HashMap<>());
-    }
-
     public QueryRequest(String queryId, NativeContext.ClientContext clientContext, int stage, boolean compression, String queryString,
                         Map<SettingKey, Serializable> settings) {
 
@@ -66,23 +59,22 @@ public class QueryRequest implements Request {
     }
 
     @Override
-    public void writeImpl(BinarySerializer serializer) throws IOException, SQLException {
-        serializer.writeUTF8StringBinary(queryId);
-        clientContext.writeTo(serializer);
+    public void encode0(ByteBuf buf) {
+        writeUTF8Binary(buf, queryId);
+        clientContext.encode(buf);
 
         for (Map.Entry<SettingKey, Serializable> entry : settings.entrySet()) {
-            serializer.writeUTF8StringBinary(entry.getKey().name());
+            writeUTF8Binary(buf, entry.getKey().name());
             @SuppressWarnings("rawtypes")
             SettingType type = entry.getKey().type();
             //noinspection unchecked
-            type.serializeSetting(serializer, entry.getValue());
+            type.encode(buf, entry.getValue());
         }
-        serializer.writeUTF8StringBinary("");
-        serializer.writeVarInt(stage);
-        serializer.writeBoolean(compression);
-        serializer.writeUTF8StringBinary(queryString);
+        writeUTF8Binary(buf, "");
+        writeVarInt(buf, stage);
+        buf.writeBoolean(compression);
+        writeUTF8Binary(buf, queryString);
         // empty data to server
-        DataRequest.EMPTY.writeTo(serializer);
-
+        DataRequest.EMPTY.encode(buf);
     }
 }

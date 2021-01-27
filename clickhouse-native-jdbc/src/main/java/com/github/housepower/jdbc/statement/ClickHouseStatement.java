@@ -14,18 +14,18 @@
 
 package com.github.housepower.jdbc.statement;
 
-import com.github.housepower.jdbc.ClickHouseConnection;
-import com.github.housepower.jdbc.ClickHouseResultSet;
 import com.github.housepower.client.NativeContext;
 import com.github.housepower.data.Block;
+import com.github.housepower.jdbc.ClickHouseConnection;
+import com.github.housepower.jdbc.ClickHouseResultSet;
+import com.github.housepower.jdbc.wrapper.SQLStatement;
 import com.github.housepower.log.Logger;
 import com.github.housepower.log.LoggerFactory;
 import com.github.housepower.misc.ExceptionUtil;
 import com.github.housepower.misc.Validate;
-import com.github.housepower.stream.QueryResult;
 import com.github.housepower.settings.ClickHouseConfig;
 import com.github.housepower.settings.SettingKey;
-import com.github.housepower.jdbc.wrapper.SQLStatement;
+import com.github.housepower.stream.QueryResult;
 import com.github.housepower.stream.ValuesNativeInputFormat;
 
 import java.sql.Connection;
@@ -71,7 +71,6 @@ public class ClickHouseStatement implements SQLStatement {
 
     @Override
     public int executeUpdate(String query) throws SQLException {
-
         return ExceptionUtil.rethrowSQLException(() -> {
             cfg.settings().put(SettingKey.max_result_rows, maxRows);
             cfg.settings().put(SettingKey.result_overflow_mode, "break");
@@ -89,7 +88,7 @@ public class ClickHouseStatement implements SQLStatement {
                 return updateCount;
             }
             updateCount = -1;
-            QueryResult result = connection.sendQueryRequest(query, cfg);
+            QueryResult result = connection.sendQueryRequest(query, cfg.settings());
             lastResultSet = new ClickHouseResultSet(this, cfg, db, table, result.header(), result.data());
             return 0;
         });

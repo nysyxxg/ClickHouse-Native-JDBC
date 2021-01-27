@@ -14,138 +14,39 @@
 
 package com.github.housepower.serde;
 
-import com.github.housepower.buffer.BuffedWriter;
-import com.github.housepower.buffer.CompressedBuffedWriter;
-import com.github.housepower.misc.Switcher;
-import com.github.housepower.settings.ClickHouseDefines;
+import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
-public class BinarySerializer {
+public interface BinarySerializer extends SupportCompress, AutoCloseable {
 
-    private final Switcher<BuffedWriter> switcher;
-    private final boolean enableCompress;
+    void writeBoolean(boolean b);
 
-    public BinarySerializer(BuffedWriter writer, boolean enableCompress) {
-        this.enableCompress = enableCompress;
-        BuffedWriter compressWriter = null;
-        if (enableCompress) {
-            compressWriter = new CompressedBuffedWriter(ClickHouseDefines.SOCKET_SEND_BUFFER_BYTES, writer);
-        }
-        switcher = new Switcher<>(compressWriter, writer);
-    }
+    void writeByte(byte b);
 
-    public void writeVarInt(long x) throws IOException {
-        for (int i = 0; i < 9; i++) {
-            byte byt = (byte) (x & 0x7F);
+    void writeShortLE(short s);
 
-            if (x > 0x7F) {
-                byt |= 0x80;
-            }
+    void writeIntLE(int i);
 
-            x >>= 7;
-            switcher.get().writeBinary(byt);
+    void writeLongLE(long l);
 
-            if (x == 0) {
-                return;
-            }
-        }
-    }
+    void writeVarInt(long v);
 
-    public void writeByte(byte x) throws IOException {
-        switcher.get().writeBinary(x);
-    }
+    void writeFloatLE(float f);
 
-    public void writeBoolean(boolean x) throws IOException {
-        writeVarInt((byte) (x ? 1 : 0));
-    }
+    void writeDoubleLE(double d);
 
-    @SuppressWarnings("PointlessBitwiseExpression")
-    public void writeShort(short i) throws IOException {
-        // @formatter:off
-        switcher.get().writeBinary((byte) ((i >> 0) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 8) & 0xFF));
-        // @formatter:on
-    }
+    void writeBytes(ByteBuf bytes);
 
-    @SuppressWarnings("PointlessBitwiseExpression")
-    public void writeInt(int i) throws IOException {
-        // @formatter:off
-        switcher.get().writeBinary((byte) ((i >> 0)  & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 8)  & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 16) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 24) & 0xFF));
-        // @formatter:on
-    }
+    void writeUTF8Binary(CharSequence utf8);
 
-    @SuppressWarnings("PointlessBitwiseExpression")
-    public void writeLong(long i) throws IOException {
-        // @formatter:off
-        switcher.get().writeBinary((byte) ((i >> 0)  & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 8)  & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 16) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 24) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 32) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 40) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 48) & 0xFF));
-        switcher.get().writeBinary((byte) ((i >> 56) & 0xFF));
-        // @formatter:on
-    }
+    void writeStringBinary(CharSequence seq, Charset charset);
 
-    public void writeUTF8StringBinary(String utf8) throws IOException {
-        writeStringBinary(utf8, StandardCharsets.UTF_8);
-    }
+    void writeBytesBinary(ByteBuf bytes);
 
-    public void writeStringBinary(String data, Charset charset) throws IOException {
-        byte[] bs = data.getBytes(charset);
-        writeBytesBinary(bs);
-    }
+    void flush(boolean force);
 
-    public void writeBytesBinary(byte[] bs) throws IOException {
-        writeVarInt(bs.length);
-        switcher.get().writeBinary(bs);
-    }
-
-    public void flushToTarget(boolean force) throws IOException {
-        switcher.get().flushToTarget(force);
-    }
-
-    public void maybeEnableCompressed() {
-        if (enableCompress) {
-            switcher.select(false);
-        }
-    }
-
-    public void maybeDisableCompressed() throws IOException {
-        if (enableCompress) {
-            switcher.get().flushToTarget(true);
-            switcher.select(true);
-        }
-    }
-
-    public void writeFloat(float datum) throws IOException {
-        int x = Float.floatToIntBits(datum);
-        writeInt(x);
-    }
-
-    @SuppressWarnings("PointlessBitwiseExpression")
-    public void writeDouble(double datum) throws IOException {
-        long x = Double.doubleToLongBits(datum);
-        // @formatter:off
-        switcher.get().writeBinary((byte) ((x >>> 0)  & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 8)  & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 16) & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 24) & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 32) & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 40) & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 48) & 0xFF));
-        switcher.get().writeBinary((byte) ((x >>> 56) & 0xFF));
-        // @formatter:on
-    }
-
-    public void writeBytes(byte[] bytes) throws IOException {
-        switcher.get().writeBinary(bytes);
+    @Override
+    default void close() {
     }
 }

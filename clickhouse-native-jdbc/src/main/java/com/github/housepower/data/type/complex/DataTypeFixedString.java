@@ -16,14 +16,19 @@ package com.github.housepower.data.type.complex;
 
 import com.github.housepower.client.NativeContext;
 import com.github.housepower.data.IDataType;
+import com.github.housepower.exception.ClickHouseClientException;
 import com.github.housepower.misc.SQLLexer;
 import com.github.housepower.misc.Validate;
 import com.github.housepower.serde.BinaryDeserializer;
 import com.github.housepower.serde.BinarySerializer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.util.AsciiString;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.Types;
 
@@ -88,7 +93,6 @@ public class DataTypeFixedString implements IDataType<CharSequence, String> {
         return 0;
     }
 
-    @Override
     public void serializeBinary(CharSequence data, BinarySerializer serializer) throws SQLException, IOException {
         if (data instanceof AsciiString) {
             writeBytes(((AsciiString) data).toByteArray(), serializer);
@@ -97,7 +101,7 @@ public class DataTypeFixedString implements IDataType<CharSequence, String> {
         }
     }
 
-    private void writeBytes(byte[] bs, BinarySerializer serializer) throws IOException, SQLException {
+    private void writeBytes(byte[] bs, BinarySerializer serializer) throws SQLException {
         byte[] res;
         if (bs.length > n) {
             throw new SQLException("The size of FixString column is too large, got " + bs.length);
@@ -108,12 +112,44 @@ public class DataTypeFixedString implements IDataType<CharSequence, String> {
             res = new byte[n];
             System.arraycopy(bs, 0, res, 0, bs.length);
         }
-        serializer.writeBytes(res);
+        serializer.writeBytes(Unpooled.wrappedBuffer(res));
     }
 
     @Override
-    public String deserializeBinary(BinaryDeserializer deserializer) throws SQLException, IOException {
-        return new String(deserializer.readBytes(n), charset);
+    public void encode(ByteBuf buf, CharSequence data) {
+        int writeLen;
+        int paddingLen;
+        if (data instanceof AsciiString) {
+            writeLen = data.length();
+            checkWriteLength(writeLen);
+            buf.writeCharSequence(data, StandardCharsets.US_ASCII);
+        } else if (charset.equals(StandardCharsets.UTF_8)) {
+            writeLen = ByteBufUtil.utf8Bytes(data);
+            checkWriteLength(writeLen);
+            buf.writeCharSequence(data, charset);
+        } else {
+            byte[] bytes = data.toString().getBytes(charset);
+            writeLen = bytes.length;
+            checkWriteLength(writeLen);
+            buf.writeBytes(bytes);
+        }
+        paddingLen = n - writeLen;
+        buf.writeZero(paddingLen);
+    }
+
+    private void checkWriteLength(int writeLen) {
+        if (writeLen > n)
+            throw new ClickHouseClientException("The size of FixString column is too large, got " + writeLen);
+    }
+
+    public CharSequence deserializeBinary(BinaryDeserializer deserializer) throws SQLException, IOException {
+        ByteBuf buf = deserializer.readBytes(n);
+        return buf.readCharSequence(n, charset);
+    }
+
+    @Override
+    public CharSequence decode(ByteBuf buf) {
+        return buf.readCharSequence(n, charset);
     }
 
     @Override

@@ -290,7 +290,7 @@ public class ClickHousePreparedInsertStatement extends AbstractPreparedStatement
             }
             return ((ClickHouseStruct) obj).mapAttributes(((DataTypeTuple) type).getNestedTypes(), unchecked(this::convertToCkDataType));
         }
-        LOG.debug("unhandled type: {}[{}]", type.name(), obj.getClass());
+        LOG.debug("unhandled type: {}|{}|{}", type.name(), obj.getClass().getSimpleName(), obj);
         return obj;
     }
 }
