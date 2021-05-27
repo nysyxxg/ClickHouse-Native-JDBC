@@ -30,6 +30,7 @@
 
     <modules>
         <module>clickhouse-integration-spark</module>
+        <module>clickhouse-integration-spark3</module>
     </modules>
 
     <build>

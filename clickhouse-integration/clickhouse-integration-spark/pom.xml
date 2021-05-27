@@ -23,7 +23,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>clickhouse-integration-spark_${scala.binary.version}</artifactId>
+    <artifactId>clickhouse-integration-spark</artifactId>
 
     <url>https://github.com/housepower/ClickHouse-Native-JDBC</url>
 
@@ -81,6 +81,14 @@
             <artifactId>clickhouse</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.jodd</groupId>
+            <artifactId>jodd-core</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>

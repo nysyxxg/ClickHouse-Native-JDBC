@@ -23,7 +23,7 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>clickhouse-integration-spark3_${scala.binary.version}</artifactId>
+    <artifactId>clickhouse-integration-spark3</artifactId>
 
     <url>https://github.com/housepower/ClickHouse-Native-JDBC</url>
 

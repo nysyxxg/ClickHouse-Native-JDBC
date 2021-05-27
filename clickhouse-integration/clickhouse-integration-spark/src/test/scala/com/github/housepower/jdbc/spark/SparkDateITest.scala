@@ -23,9 +23,12 @@ import org.apache.spark.sql.functions.to_date
 import org.apache.spark.sql.jdbc.{ClickHouseDialect, JdbcDialects}
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.junit.jupiter.api.{BeforeAll, Test}
-
 import java.sql.Date
 import java.time.LocalDate
+import java.util.Random
+
+import jodd.util.PropertiesUtil
+
 import scala.collection.Seq
 
 object SparkDateITest {
@@ -49,6 +52,20 @@ class SparkDateITest extends AbstractITest with Logging {
     doSparkWriteAndRead(helper.getTableName)
     helper.clean()
   }
+
+  @Test
+  def testSparkJdbcWrite_v2(): Unit = {
+    var tableName = "test_" + (new Random().nextLong & 0xffffffffL)
+
+    val fileName = "D:\\Spark_Ws\\spark-apache\\examples\\src\\main\\resources\\application.properties"
+    val props = PropertiesUtil.createFromFile(fileName)
+
+    var getJdbcUrl: String = props.getProperty("ck.url")
+    var userName: String = props.getProperty("ck.username")
+    var password: String = props.getProperty("ck.password")
+    doSparkWriteAndRead(tableName, getJdbcUrl, userName, password)
+  }
+
 
   @transient lazy implicit val spark: SparkSession = {
     SparkSession.builder()
@@ -101,4 +118,42 @@ class SparkDateITest extends AbstractITest with Logging {
     assert(rows.length == 1)
     assert(rows(0).getDate(0) == Date.valueOf(LocalDate.of(2020, 10, 27)))
   }
+
+  private def doSparkWriteAndRead(table: String, getJdbcUrl: String, userName: String, password: String): Unit = {
+    import spark.implicits._
+
+    val df = Seq("2020-10-27")
+      .toDF("col_0")
+      .withColumn("col_0", to_date($"col_0"))
+
+    val resultDf = spark.createDataFrame(df.rdd, schema)
+
+    resultDf
+      .write
+      .format("jdbc")
+      .mode("overwrite")
+      .option("driver", "com.github.housepower.jdbc.ClickHouseDriver")
+      .option("url", getJdbcUrl)
+      .option("user", userName)
+      .option("password", password)
+      .option("dbtable", table)
+      .option("truncate", "true")
+      .option("batchsize", 1000)
+      .option("isolationLevel", "NONE")
+      .save
+
+    val rows = spark.read
+      .format("jdbc")
+      .option("driver", "com.github.housepower.jdbc.ClickHouseDriver")
+      .option("url", getJdbcUrl)
+      .option("user", userName)
+      .option("password", password)
+      .option("dbtable", table)
+      .load
+      .collect
+
+    assert(rows.length == 1)
+    assert(rows(0).getDate(0) == Date.valueOf(LocalDate.of(2020, 10, 27)))
+  }
+
 }
